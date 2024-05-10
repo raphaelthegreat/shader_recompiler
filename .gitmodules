@@ -1,0 +1,13 @@
+[submodule "externals/fmt"]
+	path = externals/fmt
+	url = https://github.com/fmtlib/fmt
+[submodule "externals/spirv-tools"]
+	path = externals/spirv-tools
+	url = https://github.com/KhronosGroup/SPIRV-Tools
+[submodule "externals/spirv-headers"]
+	path = externals/spirv-headers
+	url = https://github.com/KhronosGroup/SPIRV-Headers/
+[submodule "externals/boost"]
+	path = externals/boost
+	url = https://github.com/raphaelthegreat/ext-boost
+	branch = gcn

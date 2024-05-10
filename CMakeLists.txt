@@ -1,5 +1,7 @@
 cmake_minimum_required(VERSION 3.16.3)
 
+project(shader_recompiler)
+
 set(CMAKE_CXX_STANDARD 23)
 set(CMAKE_CXX_STANDARD_REQUIRED True)
 
@@ -13,78 +15,62 @@ function(create_target_directory_groups target_name)
     endforeach()
 endfunction()
 
+add_subdirectory(externals)
+
 add_library(shader_recompiler STATIC
-                      src/common/assert.h
-                      src/common/enum.h
-                      src/common/types.h
-                      src/common/object_bank.h
-                      src/common/struct_bank.cpp
-                      src/common/struct_bank.h
-                      src/control_flow/control_flow_graph.cpp
-                      src/control_flow/control_flow_graph.h
-                      src/control_flow/divergent_flow.cpp
-                      src/control_flow/divergent_flow.h
-                      src/control_flow/dominator_tree.cpp
-                      src/control_flow/dominator_tree.h
-                      src/control_flow/loop_info.cpp
-                      src/control_flow/loop_info.h
-                      src/control_flow/stackifier.cpp
-                      src/control_flow/stackifier.h
-                      src/control_flow/token_list.cpp
-                      src/control_flow/token_list.h
-                      src/spirv/GLSL.std.450.h
-                      src/spirv/GLSL.std.450.hpp
-                      src/spirv/NonSemanticDebugPrintf.hpp
-                      src/spirv/spirv_code_buffer.cpp
-                      src/spirv/spirv_code_buffer.h
-                      src/spirv/spirv.hpp
-                      src/spirv/spirv_instruction.h
-                      src/spirv/spirv_module.cpp
-                      src/spirv/spirv_module.h
-                      src/analysis.cpp
-                      src/analysis.h
-                      src/common.h
-                      src/compiler_control_flow.cpp
-                      src/compiler.cpp
-                      src/compiler_data_share.cpp
-                      src/compiler_debug_profile.cpp
-                      src/compiler_defs.h
-                      src/compiler_export.cpp
-                      src/compiler.h
-                      src/compiler_scalar_alu.cpp
-                      src/compiler_scalar_memory.cpp
-                      src/compiler_vector_alu.cpp
-                      src/compiler_vector_interpolation.cpp
-                      src/compiler_vector_memory.cpp
-                      src/decoder.cpp
-                      src/decoder.h
-                      src/fetch_shader.cpp
-                      src/fetch_shader.h
-                      src/gcn_constants.h
-                      src/gcn_enum.h
-                      src/gcn_mod_info.h
-                      src/header.cpp
-                      src/header.h
-                      src/instruction.cpp
-                      src/instruction.h
-                      src/instruction_iterator.cpp
-                      src/instruction_iterator.h
-                      src/instruction_util.cpp
-                      src/instruction_util.h
-                      src/module.cpp
-                      src/module.h
-                      src/program_info.cpp
-                      src/program_info.h
-                      src/shader_binary.h
-                      src/shader_key.h
-                      src/shader_meta.h
-                      src/shader_reg_field.h
-                      src/shader_register.h
-                      src/state_register.cpp
-                      src/state_register.h
-                      src/util.h
+            src/exception.h
+            src/object_pool.h
+            src/common/assert.cpp
+            src/common/assert.h
+            src/common/bit_field.h
+            src/common/enum.h
+            src/common/types.h
+            src/frontend/translate/data_share.cpp
+            src/frontend/translate/export.cpp
+            src/frontend/translate/flat_memory.cpp
+            src/frontend/translate/scalar_alu.cpp
+            src/frontend/translate/scalar_memory.cpp
+            src/frontend/translate/translate.cpp
+            src/frontend/translate/translate.h
+            src/frontend/translate/vector_alu.cpp
+            src/frontend/translate/vector_interpolation.cpp
+            src/frontend/translate/vector_memory.cpp
+            src/frontend/control_flow_graph.cpp
+            src/frontend/control_flow_graph.h
+            src/frontend/decode.cpp
+            src/frontend/decode.h
+            src/frontend/format.cpp
+            src/frontend/instruction.h
+            src/frontend/opcodes.h
+            src/frontend/structured_control_flow.cpp
+            src/frontend/structured_control_flow.h
+            src/ir/passes/ssa_rewrite_pass.cpp
+            src/ir/abstract_syntax_list.h
+            src/ir/attribute.cpp
+            src/ir/attribute.h
+            src/ir/basic_block.cpp
+            src/ir/basic_block.h
+            src/ir/breadth_first_search.h
+            src/ir/condition.h
+            src/ir/ir_emitter.cpp
+            src/ir/ir_emitter.h
+            src/ir/microinstruction.cpp
+            src/ir/opcodes.cpp
+            src/ir/opcodes.h
+            src/ir/opcodes.inc
+            src/ir/post_order.cpp
+            src/ir/post_order.h
+            src/ir/program.cpp
+            src/ir/program.h
+            src/ir/reg.h
+            src/ir/type.cpp
+            src/ir/type.h
+            src/ir/value.cpp
+            src/ir/value.h
+            src/frontend/instruction.cpp
 )
 target_include_directories(shader_recompiler PUBLIC ${CMAKE_CURRENT_SOURCE_DIR}/src)
+target_link_libraries(shader_recompiler PUBLIC fmt boost)
 create_target_directory_groups(shader_recompiler)
 
-add_subdirectory(src/sb_parser)
+add_subdirectory(tools/sb_parser)

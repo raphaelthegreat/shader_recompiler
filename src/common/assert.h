@@ -8,7 +8,7 @@
 // However touching this file yields a global recompilation as this header is included almost
 // everywhere. So let's just move the handling of the failed assert to a single cpp file.
 
-#include <cstdio>
+#include <fmt/core.h>
 
 void assert_fail_impl();
 [[noreturn]] void unreachable_impl();
@@ -22,7 +22,7 @@ void assert_fail_impl();
 #define ASSERT(_a_)                                                                                \
     ([&]() SHAD_NO_INLINE {                                                                        \
         if (!(_a_)) [[unlikely]] {                                                                 \
-            printf("Assertion Failed!");                                                           \
+            fmt::print("Assertion Failed!");                                                       \
             assert_fail_impl();                                                                    \
         }                                                                                          \
     }())
@@ -30,20 +30,20 @@ void assert_fail_impl();
 #define ASSERT_MSG(_a_, ...)                                                                       \
     ([&]() SHAD_NO_INLINE {                                                                        \
         if (!(_a_)) [[unlikely]] {                                                                 \
-            printf("Assertion Failed!\n" __VA_ARGS__);                                             \
+            fmt::print("Assertion Failed!\n" __VA_ARGS__);                                         \
             assert_fail_impl();                                                                    \
         }                                                                                          \
     }())
 
 #define UNREACHABLE()                                                                              \
     do {                                                                                           \
-        printf("Unreachable code!");                                                               \
+        fmt::print("Unreachable code!");                                                           \
         unreachable_impl();                                                                        \
     } while (0)
 
 #define UNREACHABLE_MSG(...)                                                                       \
     do {                                                                                           \
-        printf("Unreachable code!\n" __VA_ARGS__);                                                 \
+        fmt::print("Unreachable code!\n" __VA_ARGS__);                                             \
         unreachable_impl();                                                                        \
     } while (0)
 
