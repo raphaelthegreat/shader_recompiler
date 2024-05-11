@@ -1148,6 +1148,14 @@ U32U64 IREmitter::UConvert(size_t result_bitsize, const U32U64& value) {
 }
 
 F16F32F64 IREmitter::FPConvert(size_t result_bitsize, const F16F32F64& value) {
+    switch (result_bitsize) {
+    case 32:
+        switch (value.Type()) {
+        case Type::F16:
+            return Inst<F32>(Opcode::ConvertF32F16, value);
+        }
+        break;
+    }
     throw NotImplementedException("Conversion from {} to {} bits", value.Type(), result_bitsize);
 }
 
