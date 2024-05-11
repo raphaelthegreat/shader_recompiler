@@ -3736,7 +3736,7 @@ constexpr std::array<InstFormat, 112> InstructionFormatMIMG = { {
         ScalarType::Undefined, ScalarType::Undefined },
     // 71 = IMAGE_GATHER4_LZ
     { InstClass::VectorMemImgSmp, InstCategory::VectorMemory, 4, 1,
-        ScalarType::Undefined, ScalarType::Undefined },
+        ScalarType::Uint32, ScalarType::Float32 },
     // 72 = IMAGE_GATHER4_C
     { InstClass::VectorMemImgSmp, InstCategory::VectorMemory, 4, 1,
         ScalarType::Uint32, ScalarType::Float32 },
@@ -3776,7 +3776,7 @@ constexpr std::array<InstFormat, 112> InstructionFormatMIMG = { {
         ScalarType::Undefined, ScalarType::Undefined },
     // 87 = IMAGE_GATHER4_LZ_O
     { InstClass::VectorMemImgSmp, InstCategory::VectorMemory, 4, 1,
-        ScalarType::Undefined, ScalarType::Undefined },
+        ScalarType::Uint32, ScalarType::Float32 },
     // 88 = IMAGE_GATHER4_C_O
     { InstClass::VectorMemImgSmp, InstCategory::VectorMemory, 4, 1,
         ScalarType::Undefined, ScalarType::Undefined },
@@ -3799,7 +3799,7 @@ constexpr std::array<InstFormat, 112> InstructionFormatMIMG = { {
         ScalarType::Undefined, ScalarType::Undefined },
     // 96 = IMAGE_GET_LOD
     { InstClass::VectorMemImgUt, InstCategory::VectorMemory, 4, 1,
-        ScalarType::Undefined, ScalarType::Undefined },
+        ScalarType::Float32, ScalarType::Float32 },
     {},
     {},
     {},
