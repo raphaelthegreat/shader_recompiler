@@ -8,11 +8,11 @@
 namespace Shader::Gcn {
 
 namespace bit {
-template<typename T>
+template <typename T>
 T extract(T value, u32 lst, u32 fst) {
     return (value >> fst) & ~(~T(0) << (lst - fst + 1));
 }
-}
+} // namespace bit
 
 InstEncoding GetInstructionEncoding(u32 token) {
     auto encoding = static_cast<InstEncoding>(token & (u32)EncodingMask::MASK_9bit);
@@ -90,8 +90,7 @@ bool HasAdditionalLiteral(InstEncoding encoding, Opcode opcode) {
         return opcode == Opcode::S_SETREG_IMM32_B32;
     }
     case InstEncoding::VOP2: {
-        return opcode == Opcode::V_MADMK_F32 ||
-               opcode == Opcode::V_MADAK_F32;
+        return opcode == Opcode::V_MADMK_F32 || opcode == Opcode::V_MADAK_F32;
     }
     default:
         return false;
@@ -99,16 +98,11 @@ bool HasAdditionalLiteral(InstEncoding encoding, Opcode opcode) {
 }
 
 bool IsVop3BEncoding(Opcode opcode) {
-    return opcode == Opcode::V_ADD_I32 ||
-           opcode == Opcode::V_ADDC_U32 ||
-           opcode == Opcode::V_SUB_I32 ||
-           opcode == Opcode::V_SUBB_U32 ||
-           opcode == Opcode::V_SUBREV_I32 ||
-           opcode == Opcode::V_SUBBREV_U32 ||
-           opcode == Opcode::V_DIV_SCALE_F32 ||
-           opcode == Opcode::V_DIV_SCALE_F64 ||
-           opcode == Opcode::V_MAD_U64_U32 ||
-           opcode == Opcode::V_MAD_I64_I32;
+    return opcode == Opcode::V_ADD_I32 || opcode == Opcode::V_ADDC_U32 ||
+           opcode == Opcode::V_SUB_I32 || opcode == Opcode::V_SUBB_U32 ||
+           opcode == Opcode::V_SUBREV_I32 || opcode == Opcode::V_SUBBREV_U32 ||
+           opcode == Opcode::V_DIV_SCALE_F32 || opcode == Opcode::V_DIV_SCALE_F64 ||
+           opcode == Opcode::V_MAD_U64_U32 || opcode == Opcode::V_MAD_I64_I32;
 }
 
 GcnInst GcnDecodeContext::decodeInstruction(GcnCodeSlice& code) {
@@ -141,12 +135,10 @@ GcnInst GcnDecodeContext::decodeInstruction(GcnCodeSlice& code) {
     return m_instruction;
 }
 
-uint32_t GcnDecodeContext::getEncodingLength(InstEncoding encoding)
-{
+uint32_t GcnDecodeContext::getEncodingLength(InstEncoding encoding) {
     uint32_t instLength = 0;
 
-    switch (encoding)
-    {
+    switch (encoding) {
     case InstEncoding::SOP1:
     case InstEncoding::SOPP:
     case InstEncoding::SOPC:
@@ -172,8 +164,7 @@ uint32_t GcnDecodeContext::getEncodingLength(InstEncoding encoding)
     return instLength;
 }
 
-uint32_t GcnDecodeContext::getOpMapOffset(InstEncoding encoding)
-{
+uint32_t GcnDecodeContext::getOpMapOffset(InstEncoding encoding) {
     uint32_t offset = 0;
     switch (encoding) {
     case InstEncoding::SOP1:
@@ -231,32 +222,26 @@ uint32_t GcnDecodeContext::getOpMapOffset(InstEncoding encoding)
 uint32_t GcnDecodeContext::mapEncodingOp(InstEncoding encoding, Opcode opcode) {
     // Map from uniform opcode to encoding specific opcode.
     uint32_t encodingOp = 0;
-    if (encoding == InstEncoding::VOP3)
-    {
-        if (opcode >= Opcode::V_CMP_F_F32 && opcode <= Opcode::V_CMPX_T_U64)
-        {
-            uint32_t op = static_cast<uint32_t>(opcode) - static_cast<uint32_t>(OpcodeMap::OP_MAP_VOPC);
-            encodingOp  = op + static_cast<uint32_t>(OpMapVOP3VOPX::VOP3_TO_VOPC);
+    if (encoding == InstEncoding::VOP3) {
+        if (opcode >= Opcode::V_CMP_F_F32 && opcode <= Opcode::V_CMPX_T_U64) {
+            uint32_t op =
+                static_cast<uint32_t>(opcode) - static_cast<uint32_t>(OpcodeMap::OP_MAP_VOPC);
+            encodingOp = op + static_cast<uint32_t>(OpMapVOP3VOPX::VOP3_TO_VOPC);
+        } else if (opcode >= Opcode::V_CNDMASK_B32 && opcode <= Opcode::V_CVT_PK_I16_I32) {
+            uint32_t op =
+                static_cast<uint32_t>(opcode) - static_cast<uint32_t>(OpcodeMap::OP_MAP_VOP2);
+            encodingOp = op + static_cast<uint32_t>(OpMapVOP3VOPX::VOP3_TO_VOP2);
+        } else if (opcode >= Opcode::V_NOP && opcode <= Opcode::V_MOVRELSD_B32) {
+            uint32_t op =
+                static_cast<uint32_t>(opcode) - static_cast<uint32_t>(OpcodeMap::OP_MAP_VOP1);
+            encodingOp = op + static_cast<uint32_t>(OpMapVOP3VOPX::VOP3_TO_VOP1);
+        } else {
+            encodingOp =
+                static_cast<uint32_t>(opcode) - static_cast<uint32_t>(OpcodeMap::OP_MAP_VOP3);
         }
-        else if (opcode >= Opcode::V_CNDMASK_B32 && opcode <= Opcode::V_CVT_PK_I16_I32)
-        {
-            uint32_t op = static_cast<uint32_t>(opcode) - static_cast<uint32_t>(OpcodeMap::OP_MAP_VOP2);
-            encodingOp  = op + static_cast<uint32_t>(OpMapVOP3VOPX::VOP3_TO_VOP2);
-        }
-        else if (opcode >= Opcode::V_NOP && opcode <= Opcode::V_MOVRELSD_B32)
-        {
-            uint32_t op = static_cast<uint32_t>(opcode) - static_cast<uint32_t>(OpcodeMap::OP_MAP_VOP1);
-            encodingOp  = op + static_cast<uint32_t>(OpMapVOP3VOPX::VOP3_TO_VOP1);
-        }
-        else
-        {
-            encodingOp = static_cast<uint32_t>(opcode) - static_cast<uint32_t>(OpcodeMap::OP_MAP_VOP3);
-        }
-    }
-    else
-    {
+    } else {
         uint32_t mapOffset = getOpMapOffset(encoding);
-        encodingOp         = static_cast<uint32_t>(opcode) - mapOffset;
+        encodingOp = static_cast<uint32_t>(opcode) - mapOffset;
     }
 
     return encodingOp;
@@ -267,7 +252,7 @@ void GcnDecodeContext::updateInstructionMeta(InstEncoding encoding) {
     InstFormat instFormat = InstructionFormat(encoding, encodingOp);
 
     ASSERT_MSG(instFormat.src_type != ScalarType::Undefined &&
-               instFormat.dst_type != ScalarType::Undefined,
+                   instFormat.dst_type != ScalarType::Undefined,
                "TODO: Instruction format table not complete, please fix it manually.");
 
     m_instruction.inst_class = instFormat.inst_class;
@@ -295,7 +280,7 @@ void GcnDecodeContext::updateInstructionMeta(InstEncoding encoding) {
             m_instruction.dst[1].type = ScalarType::Uint64;
         }
     }
-    [[fallthrough]];
+        [[fallthrough]];
     case 1: {
         if (m_instruction.dst[0].type == ScalarType::Undefined) {
             m_instruction.dst[0].type = instFormat.dst_type;
@@ -341,8 +326,7 @@ OperandField GcnDecodeContext::getOperandField(uint32_t code) {
     return field;
 }
 
-void GcnDecodeContext::decodeInstruction32(InstEncoding encoding, GcnCodeSlice& code)
-{
+void GcnDecodeContext::decodeInstruction32(InstEncoding encoding, GcnCodeSlice& code) {
     u32 hexInstruction = code.readu32();
     switch (encoding) {
     case InstEncoding::SOP1:
@@ -378,8 +362,7 @@ void GcnDecodeContext::decodeInstruction32(InstEncoding encoding, GcnCodeSlice& 
     }
 }
 
-void GcnDecodeContext::decodeInstruction64(InstEncoding encoding, GcnCodeSlice& code)
-{
+void GcnDecodeContext::decodeInstruction64(InstEncoding encoding, GcnCodeSlice& code) {
     uint64_t hexInstruction = code.readu64();
     switch (encoding) {
     case InstEncoding::VOP3:
@@ -416,31 +399,30 @@ void GcnDecodeContext::decodeLiteralConstant(InstEncoding encoding, GcnCodeSlice
     }
 
     // Find if the instruction contains a literal constant
-    const auto it = std::ranges::find_if(m_instruction.src,
-                    [](InstOperand& src) { return src.field == OperandField::LiteralConst; });
+    const auto it = std::ranges::find_if(m_instruction.src, [](InstOperand& src) {
+        return src.field == OperandField::LiteralConst;
+    });
     if (it != m_instruction.src.end()) {
         it->code = code.readu32();
         m_instruction.length += sizeof(u32);
     }
 }
 
-void GcnDecodeContext::decodeInstructionSOP1(u32 hexInstruction)
-{
+void GcnDecodeContext::decodeInstructionSOP1(u32 hexInstruction) {
     u32 ssrc0 = bit::extract(hexInstruction, 7, 0);
-    u32 op    = bit::extract(hexInstruction, 15, 8);
-    u32 sdst  = bit::extract(hexInstruction, 22, 16);
+    u32 op = bit::extract(hexInstruction, 15, 8);
+    u32 sdst = bit::extract(hexInstruction, 22, 16);
 
     m_instruction.opcode = static_cast<Opcode>(op + static_cast<u32>(OpcodeMap::OP_MAP_SOP1));
 
     m_instruction.src[0].field = getOperandField(ssrc0);
-    m_instruction.src[0].code  = ssrc0;
+    m_instruction.src[0].code = ssrc0;
     m_instruction.dst[0].field = getOperandField(sdst);
-    m_instruction.dst[0].code  = sdst;
-    m_instruction.dst_count     = 1;
+    m_instruction.dst[0].code = sdst;
+    m_instruction.dst_count = 1;
 }
 
-void GcnDecodeContext::decodeInstructionSOPP(u32 hexInstruction)
-{
+void GcnDecodeContext::decodeInstructionSOPP(u32 hexInstruction) {
     u32 op = bit::extract(hexInstruction, 22, 16);
 
     m_instruction.opcode = static_cast<Opcode>(op + static_cast<u32>(OpcodeMap::OP_MAP_SOPP));
@@ -448,262 +430,237 @@ void GcnDecodeContext::decodeInstructionSOPP(u32 hexInstruction)
     m_instruction.control.sopp = *reinterpret_cast<InstControlSOPP*>(&hexInstruction);
 }
 
-void GcnDecodeContext::decodeInstructionSOPC(u32 hexInstruction)
-{
+void GcnDecodeContext::decodeInstructionSOPC(u32 hexInstruction) {
     u32 ssrc0 = bit::extract(hexInstruction, 7, 0);
     u32 ssrc1 = bit::extract(hexInstruction, 15, 8);
-    u32 op    = bit::extract(hexInstruction, 22, 16);
+    u32 op = bit::extract(hexInstruction, 22, 16);
 
     m_instruction.opcode = static_cast<Opcode>(op + static_cast<u32>(OpcodeMap::OP_MAP_SOPC));
 
     m_instruction.src[0].field = getOperandField(ssrc0);
-    m_instruction.src[0].code  = ssrc0;
+    m_instruction.src[0].code = ssrc0;
     m_instruction.src[1].field = getOperandField(ssrc1);
-    m_instruction.src[1].code  = ssrc1;
+    m_instruction.src[1].code = ssrc1;
 }
 
-void GcnDecodeContext::decodeInstructionSOPK(u32 hexInstruction)
-{
+void GcnDecodeContext::decodeInstructionSOPK(u32 hexInstruction) {
     u32 sdst = bit::extract(hexInstruction, 22, 16);
-    u32 op   = bit::extract(hexInstruction, 27, 23);
+    u32 op = bit::extract(hexInstruction, 27, 23);
 
     m_instruction.opcode = static_cast<Opcode>(op + static_cast<u32>(OpcodeMap::OP_MAP_SOPK));
 
     m_instruction.dst[0].field = getOperandField(sdst);
-    m_instruction.dst[0].code  = sdst;
-    m_instruction.dst_count     = 1;
+    m_instruction.dst[0].code = sdst;
+    m_instruction.dst_count = 1;
 
     m_instruction.control.sopk = *reinterpret_cast<InstControlSOPK*>(&hexInstruction);
 }
 
-void GcnDecodeContext::decodeInstructionSOP2(u32 hexInstruction)
-{
+void GcnDecodeContext::decodeInstructionSOP2(u32 hexInstruction) {
     u32 ssrc0 = bit::extract(hexInstruction, 7, 0);
     u32 ssrc1 = bit::extract(hexInstruction, 15, 8);
-    u32 sdst  = bit::extract(hexInstruction, 22, 16);
-    u32 op    = bit::extract(hexInstruction, 29, 23);
+    u32 sdst = bit::extract(hexInstruction, 22, 16);
+    u32 op = bit::extract(hexInstruction, 29, 23);
 
     m_instruction.opcode = static_cast<Opcode>(op + static_cast<u32>(OpcodeMap::OP_MAP_SOP2));
 
     m_instruction.src[0].field = getOperandField(ssrc0);
-    m_instruction.src[0].code  = ssrc0;
+    m_instruction.src[0].code = ssrc0;
     m_instruction.src[1].field = getOperandField(ssrc1);
-    m_instruction.src[1].code  = ssrc1;
+    m_instruction.src[1].code = ssrc1;
     m_instruction.dst[0].field = getOperandField(sdst);
-    m_instruction.dst[0].code  = sdst;
-    m_instruction.dst_count     = 1;
+    m_instruction.dst[0].code = sdst;
+    m_instruction.dst_count = 1;
 }
 
-void GcnDecodeContext::decodeInstructionVOP1(u32 hexInstruction)
-{
+void GcnDecodeContext::decodeInstructionVOP1(u32 hexInstruction) {
     u32 src0 = bit::extract(hexInstruction, 8, 0);
-    u32 op   = bit::extract(hexInstruction, 16, 9);
+    u32 op = bit::extract(hexInstruction, 16, 9);
     u32 vdst = bit::extract(hexInstruction, 24, 17);
 
     m_instruction.opcode = static_cast<Opcode>(op + static_cast<u32>(OpcodeMap::OP_MAP_VOP1));
 
     m_instruction.src[0].field = getOperandField(src0);
-    m_instruction.src[0].code  = m_instruction.src[0].field == OperandField::VectorGPR ? src0 - VectorGPRMin : src0;
+    m_instruction.src[0].code =
+        m_instruction.src[0].field == OperandField::VectorGPR ? src0 - VectorGPRMin : src0;
     m_instruction.dst[0].field = OperandField::VectorGPR;
-    m_instruction.dst[0].code  = vdst;
-    m_instruction.dst_count     = 1;
+    m_instruction.dst[0].code = vdst;
+    m_instruction.dst_count = 1;
 
     OpcodeVOP1 vop1Op = static_cast<OpcodeVOP1>(op);
-    if (vop1Op == OpcodeVOP1::V_READFIRSTLANE_B32)
-    {
+    if (vop1Op == OpcodeVOP1::V_READFIRSTLANE_B32) {
         m_instruction.dst[1].field = getOperandField(vdst);
-        m_instruction.dst[1].type  = ScalarType::Uint32;
-        m_instruction.dst[1].code  = vdst;
+        m_instruction.dst[1].type = ScalarType::Uint32;
+        m_instruction.dst[1].code = vdst;
     }
 }
 
-void GcnDecodeContext::decodeInstructionVOPC(u32 hexInstruction)
-{
-    u32 src0  = bit::extract(hexInstruction, 8, 0);
+void GcnDecodeContext::decodeInstructionVOPC(u32 hexInstruction) {
+    u32 src0 = bit::extract(hexInstruction, 8, 0);
     u32 vsrc1 = bit::extract(hexInstruction, 16, 9);
-    u32 op    = bit::extract(hexInstruction, 24, 17);
+    u32 op = bit::extract(hexInstruction, 24, 17);
 
     m_instruction.opcode = static_cast<Opcode>(op + static_cast<u32>(OpcodeMap::OP_MAP_VOPC));
 
     m_instruction.src[0].field = getOperandField(src0);
-    m_instruction.src[0].code  = m_instruction.src[0].field == OperandField::VectorGPR ? src0 - VectorGPRMin : src0;
+    m_instruction.src[0].code =
+        m_instruction.src[0].field == OperandField::VectorGPR ? src0 - VectorGPRMin : src0;
     m_instruction.src[1].field = OperandField::VectorGPR;
-    m_instruction.src[1].code  = vsrc1;
+    m_instruction.src[1].code = vsrc1;
     // VOPC dst is forced to VCC.
     // In order to be unified with VOP3 encoding,
     // we store it to dst[1]
     m_instruction.dst[1].field = OperandField::VccLo;
-    m_instruction.dst[1].type  = ScalarType::Uint64;
-    m_instruction.dst[1].code  = static_cast<u32>(OperandField::VccLo);
+    m_instruction.dst[1].type = ScalarType::Uint64;
+    m_instruction.dst[1].code = static_cast<u32>(OperandField::VccLo);
 }
 
-void GcnDecodeContext::decodeInstructionVOP2(u32 hexInstruction)
-{
-    u32 src0  = bit::extract(hexInstruction, 8, 0);
+void GcnDecodeContext::decodeInstructionVOP2(u32 hexInstruction) {
+    u32 src0 = bit::extract(hexInstruction, 8, 0);
     u32 vsrc1 = bit::extract(hexInstruction, 16, 9);
-    u32 vdst  = bit::extract(hexInstruction, 24, 17);
-    u32 op    = bit::extract(hexInstruction, 30, 25);
+    u32 vdst = bit::extract(hexInstruction, 24, 17);
+    u32 op = bit::extract(hexInstruction, 30, 25);
 
     m_instruction.opcode = static_cast<Opcode>(op + static_cast<u32>(OpcodeMap::OP_MAP_VOP2));
 
     m_instruction.src[0].field = getOperandField(src0);
-    m_instruction.src[0].code  = m_instruction.src[0].field == OperandField::VectorGPR ? src0 - VectorGPRMin : src0;
+    m_instruction.src[0].code =
+        m_instruction.src[0].field == OperandField::VectorGPR ? src0 - VectorGPRMin : src0;
     m_instruction.src[1].field = OperandField::VectorGPR;
-    m_instruction.src[1].code  = vsrc1;
+    m_instruction.src[1].code = vsrc1;
     m_instruction.dst[0].field = OperandField::VectorGPR;
-    m_instruction.dst[0].code  = vdst;
-    m_instruction.dst_count     = 1;
+    m_instruction.dst[0].code = vdst;
+    m_instruction.dst_count = 1;
 
     OpcodeVOP2 vop2Op = static_cast<OpcodeVOP2>(op);
-    if (vop2Op == OpcodeVOP2::V_READLANE_B32 ||
-        vop2Op == OpcodeVOP2::V_WRITELANE_B32)
-    {
+    if (vop2Op == OpcodeVOP2::V_READLANE_B32 || vop2Op == OpcodeVOP2::V_WRITELANE_B32) {
         // vsrc1 is scalar for lane instructions
         m_instruction.src[1].field = getOperandField(vsrc1);
         // dst is sgpr
         m_instruction.dst[1].field = OperandField::ScalarGPR;
-        m_instruction.dst[1].type  = ScalarType::Uint32;
-        m_instruction.dst[1].code  = vdst;
-    }
-    else if (IsVop3BEncoding(m_instruction.opcode))
-    {
+        m_instruction.dst[1].type = ScalarType::Uint32;
+        m_instruction.dst[1].code = vdst;
+    } else if (IsVop3BEncoding(m_instruction.opcode)) {
         m_instruction.dst[1].field = OperandField::VccLo;
-        m_instruction.dst[1].type  = ScalarType::Uint64;
-        m_instruction.dst[1].code  = static_cast<u32>(OperandField::VccLo);
+        m_instruction.dst[1].type = ScalarType::Uint64;
+        m_instruction.dst[1].code = static_cast<u32>(OperandField::VccLo);
     }
 }
 
-void GcnDecodeContext::decodeInstructionSMRD(u32 hexInstruction)
-{
+void GcnDecodeContext::decodeInstructionSMRD(u32 hexInstruction) {
     u32 sbase = bit::extract(hexInstruction, 14, 9);
-    u32 sdst  = bit::extract(hexInstruction, 21, 15);
-    u32 op    = bit::extract(hexInstruction, 26, 22);
+    u32 sdst = bit::extract(hexInstruction, 21, 15);
+    u32 op = bit::extract(hexInstruction, 26, 22);
 
     m_instruction.opcode = static_cast<Opcode>(op + static_cast<u32>(OpcodeMap::OP_MAP_SMRD));
 
     m_instruction.src[0].field = OperandField::ScalarGPR;
-    m_instruction.src[0].code  = sbase;
+    m_instruction.src[0].code = sbase;
     m_instruction.dst[0].field = OperandField::ScalarGPR;
-    m_instruction.dst[0].code  = sdst;
-    m_instruction.dst_count     = 1;
+    m_instruction.dst[0].code = sdst;
+    m_instruction.dst_count = 1;
 
     m_instruction.control.smrd = *reinterpret_cast<InstControlSMRD*>(&hexInstruction);
 
-    if (op <= static_cast<u32>(OpcodeSMRD::S_LOAD_DWORDX16))
-    {
+    if (op <= static_cast<u32>(OpcodeSMRD::S_LOAD_DWORDX16)) {
         m_instruction.control.smrd.count = 1 << op;
-    }
-    else if (op >= static_cast<u32>(OpcodeSMRD::S_BUFFER_LOAD_DWORD) &&
-             op <= static_cast<u32>(OpcodeSMRD::S_BUFFER_LOAD_DWORDX16))
-    {
+    } else if (op >= static_cast<u32>(OpcodeSMRD::S_BUFFER_LOAD_DWORD) &&
+               op <= static_cast<u32>(OpcodeSMRD::S_BUFFER_LOAD_DWORDX16)) {
         m_instruction.control.smrd.count = 1 << (op - 8);
     }
 
-    if (m_instruction.control.smrd.imm == 0)
-    {
-        u32 code              = m_instruction.control.smrd.offset;
+    if (m_instruction.control.smrd.imm == 0) {
+        u32 code = m_instruction.control.smrd.offset;
         m_instruction.src[1].field = getOperandField(code);
-        m_instruction.src[1].type  = ScalarType::Uint32;
-        m_instruction.src[1].code  = code;
+        m_instruction.src[1].type = ScalarType::Uint32;
+        m_instruction.src[1].code = code;
     }
 }
 
-void GcnDecodeContext::decodeInstructionVINTRP(u32 hexInstruction)
-{
+void GcnDecodeContext::decodeInstructionVINTRP(u32 hexInstruction) {
     u32 vsrc = bit::extract(hexInstruction, 7, 0);
-    u32 op   = bit::extract(hexInstruction, 17, 16);
+    u32 op = bit::extract(hexInstruction, 17, 16);
     u32 vdst = bit::extract(hexInstruction, 25, 18);
 
     m_instruction.opcode = static_cast<Opcode>(op + static_cast<u32>(OpcodeMap::OP_MAP_VINTRP));
 
     m_instruction.src[0].field = OperandField::VectorGPR;
-    m_instruction.src[0].code  = vsrc;
+    m_instruction.src[0].code = vsrc;
     m_instruction.dst[0].field = OperandField::VectorGPR;
-    m_instruction.dst[0].code  = vdst;
-    m_instruction.dst_count     = 1;
+    m_instruction.dst[0].code = vdst;
+    m_instruction.dst_count = 1;
 
     m_instruction.control.vintrp = *reinterpret_cast<InstControlVINTRP*>(&hexInstruction);
 }
 
-void GcnDecodeContext::decodeInstructionVOP3(uint64_t hexInstruction)
-{
+void GcnDecodeContext::decodeInstructionVOP3(uint64_t hexInstruction) {
     u32 vdst = bit::extract(hexInstruction, 7, 0);
-    u32 sdst = bit::extract(hexInstruction, 14, 8);  // For VOP3B
-    u32 op   = bit::extract(hexInstruction, 25, 17);
+    u32 sdst = bit::extract(hexInstruction, 14, 8); // For VOP3B
+    u32 op = bit::extract(hexInstruction, 25, 17);
     u32 src0 = bit::extract(hexInstruction, 40, 32);
     u32 src1 = bit::extract(hexInstruction, 49, 41);
     u32 src2 = bit::extract(hexInstruction, 58, 50);
 
     if (op >= static_cast<u32>(OpcodeVOP3::V_CMP_F_F32) &&
-        op <= static_cast<u32>(OpcodeVOP3::V_CMPX_T_U64))
-    {
+        op <= static_cast<u32>(OpcodeVOP3::V_CMPX_T_U64)) {
         // Map from VOP3 to VOPC
-        u32 vopcOp      = op - static_cast<u32>(OpMapVOP3VOPX::VOP3_TO_VOPC);
-        m_instruction.opcode = static_cast<Opcode>(vopcOp + static_cast<u32>(OpcodeMap::OP_MAP_VOPC));
-    }
-    else if (op >= static_cast<u32>(OpcodeVOP3::V_CNDMASK_B32) &&
-             op <= static_cast<u32>(OpcodeVOP3::V_CVT_PK_I16_I32))
-    {
+        u32 vopcOp = op - static_cast<u32>(OpMapVOP3VOPX::VOP3_TO_VOPC);
+        m_instruction.opcode =
+            static_cast<Opcode>(vopcOp + static_cast<u32>(OpcodeMap::OP_MAP_VOPC));
+    } else if (op >= static_cast<u32>(OpcodeVOP3::V_CNDMASK_B32) &&
+               op <= static_cast<u32>(OpcodeVOP3::V_CVT_PK_I16_I32)) {
         // Map from VOP3 to VOP2
-        u32 vop2Op      = op - static_cast<u32>(OpMapVOP3VOPX::VOP3_TO_VOP2);
-        m_instruction.opcode = static_cast<Opcode>(vop2Op + static_cast<u32>(OpcodeMap::OP_MAP_VOP2));
-    }
-    else if (op >= static_cast<u32>(OpcodeVOP3::V_NOP) &&
-             op <= static_cast<u32>(OpcodeVOP3::V_MOVRELSD_B32))
-    {
+        u32 vop2Op = op - static_cast<u32>(OpMapVOP3VOPX::VOP3_TO_VOP2);
+        m_instruction.opcode =
+            static_cast<Opcode>(vop2Op + static_cast<u32>(OpcodeMap::OP_MAP_VOP2));
+    } else if (op >= static_cast<u32>(OpcodeVOP3::V_NOP) &&
+               op <= static_cast<u32>(OpcodeVOP3::V_MOVRELSD_B32)) {
         // Map from VOP3 to VOP1
-        u32 vop1Op      = op - static_cast<u32>(OpMapVOP3VOPX::VOP3_TO_VOP1);
-        m_instruction.opcode = static_cast<Opcode>(vop1Op + static_cast<u32>(OpcodeMap::OP_MAP_VOP1));
-    }
-    else
-    {
+        u32 vop1Op = op - static_cast<u32>(OpMapVOP3VOPX::VOP3_TO_VOP1);
+        m_instruction.opcode =
+            static_cast<Opcode>(vop1Op + static_cast<u32>(OpcodeMap::OP_MAP_VOP1));
+    } else {
         // VOP3 encoding, do not map.
         m_instruction.opcode = static_cast<Opcode>(op + static_cast<u32>(OpcodeMap::OP_MAP_VOP3));
     }
 
     m_instruction.src[0].field = getOperandField(src0);
-    m_instruction.src[0].code  = m_instruction.src[0].field == OperandField::VectorGPR ? src0 - VectorGPRMin : src0;
+    m_instruction.src[0].code =
+        m_instruction.src[0].field == OperandField::VectorGPR ? src0 - VectorGPRMin : src0;
     m_instruction.src[1].field = getOperandField(src1);
-    m_instruction.src[1].code  = m_instruction.src[1].field == OperandField::VectorGPR ? src1 - VectorGPRMin : src1;
+    m_instruction.src[1].code =
+        m_instruction.src[1].field == OperandField::VectorGPR ? src1 - VectorGPRMin : src1;
     m_instruction.src[2].field = getOperandField(src2);
-    m_instruction.src[2].code  = m_instruction.src[2].field == OperandField::VectorGPR ? src2 - VectorGPRMin : src2;
+    m_instruction.src[2].code =
+        m_instruction.src[2].field == OperandField::VectorGPR ? src2 - VectorGPRMin : src2;
     m_instruction.dst[0].field = OperandField::VectorGPR;
-    m_instruction.dst[0].code  = vdst;
+    m_instruction.dst[0].code = vdst;
 
     OpcodeVOP3 vop3Op = static_cast<OpcodeVOP3>(op);
-    if (IsVop3BEncoding(m_instruction.opcode))
-    {
+    if (IsVop3BEncoding(m_instruction.opcode)) {
         m_instruction.dst[1].field = OperandField::ScalarGPR;
-        m_instruction.dst[1].type  = ScalarType::Uint64;
-        m_instruction.dst[1].code  = sdst;
-    }
-    else
-    {
-        if (vop3Op >= OpcodeVOP3::V_CMP_F_F32 && vop3Op <= OpcodeVOP3::V_CMPX_T_U64)
-        {
+        m_instruction.dst[1].type = ScalarType::Uint64;
+        m_instruction.dst[1].code = sdst;
+    } else {
+        if (vop3Op >= OpcodeVOP3::V_CMP_F_F32 && vop3Op <= OpcodeVOP3::V_CMPX_T_U64) {
             m_instruction.dst[1].field = getOperandField(vdst);
-            m_instruction.dst[1].type  = ScalarType::Uint64;
-            m_instruction.dst[1].code  = vdst;
-        }
-        else if (vop3Op >= OpcodeVOP3::V_READLANE_B32 && vop3Op <= OpcodeVOP3::V_WRITELANE_B32)
-        {
+            m_instruction.dst[1].type = ScalarType::Uint64;
+            m_instruction.dst[1].code = vdst;
+        } else if (vop3Op >= OpcodeVOP3::V_READLANE_B32 && vop3Op <= OpcodeVOP3::V_WRITELANE_B32) {
             // vsrc1 is scalar for lane instructions
             m_instruction.src[1].field = getOperandField(src1);
             // dst is sgpr for lane instruction
             m_instruction.dst[1].field = OperandField::ScalarGPR;
-            m_instruction.dst[1].type  = ScalarType::Uint32;
-            m_instruction.dst[1].code  = vdst;
+            m_instruction.dst[1].type = ScalarType::Uint32;
+            m_instruction.dst[1].code = vdst;
         }
     }
 
     if (op >= static_cast<u32>(OpcodeVOP3::V_ADD_I32) &&
-        op <= static_cast<u32>(OpcodeVOP3::V_DIV_SCALE_F64))
-    {
+        op <= static_cast<u32>(OpcodeVOP3::V_DIV_SCALE_F64)) {
         // VOP3B has a sdst operand.
         m_instruction.dst_count = 2;
-    }
-    else
-    {
+    } else {
         m_instruction.dst_count = 1;
     }
 
@@ -711,16 +668,13 @@ void GcnDecodeContext::decodeInstructionVOP3(uint64_t hexInstruction)
 
     // update input modifier
     auto& control = m_instruction.control.vop3;
-    for (u32 i = 0; i != 3; ++i)
-    {
-        if (control.abs & (1u << i))
-        {
-            m_instruction.src[i].input_modifier.set(InputModifier::Abs);
+    for (u32 i = 0; i != 3; ++i) {
+        if (control.abs & (1u << i)) {
+            m_instruction.src[i].input_modifier.abs = true;
         }
 
-        if (control.neg & (1u << i))
-        {
-            m_instruction.src[i].input_modifier.set(InputModifier::Neg);
+        if (control.neg & (1u << i)) {
+            m_instruction.src[i].input_modifier.neg = true;
         }
     }
 
@@ -728,8 +682,7 @@ void GcnDecodeContext::decodeInstructionVOP3(uint64_t hexInstruction)
     auto& outputMod = m_instruction.dst[0].output_modifier;
 
     outputMod.clamp = static_cast<bool>(control.clmp);
-    switch (control.omod)
-    {
+    switch (control.omod) {
     case 0:
         outputMod.multiplier = std::numeric_limits<float>::quiet_NaN();
         break;
@@ -745,133 +698,105 @@ void GcnDecodeContext::decodeInstructionVOP3(uint64_t hexInstruction)
     }
 }
 
-void GcnDecodeContext::decodeInstructionMUBUF(uint64_t hexInstruction)
-{
-    u32 op      = bit::extract(hexInstruction, 24, 18);
-    u32 vaddr   = bit::extract(hexInstruction, 39, 32);
-    u32 vdata   = bit::extract(hexInstruction, 47, 40);
-    u32 srsrc   = bit::extract(hexInstruction, 52, 48);
+void GcnDecodeContext::decodeInstructionMUBUF(uint64_t hexInstruction) {
+    u32 op = bit::extract(hexInstruction, 24, 18);
+    u32 vaddr = bit::extract(hexInstruction, 39, 32);
+    u32 vdata = bit::extract(hexInstruction, 47, 40);
+    u32 srsrc = bit::extract(hexInstruction, 52, 48);
     u32 soffset = bit::extract(hexInstruction, 63, 56);
 
     m_instruction.opcode = static_cast<Opcode>(op + static_cast<u32>(OpcodeMap::OP_MAP_MUBUF));
 
     m_instruction.src[0].field = OperandField::VectorGPR;
-    m_instruction.src[0].code  = vaddr;
+    m_instruction.src[0].code = vaddr;
     m_instruction.src[1].field = OperandField::VectorGPR;
-    m_instruction.src[1].code  = vdata;
+    m_instruction.src[1].code = vdata;
     m_instruction.src[2].field = OperandField::ScalarGPR;
-    m_instruction.src[2].code  = srsrc;
+    m_instruction.src[2].code = srsrc;
     m_instruction.src[3].field = getOperandField(soffset);
-    m_instruction.src[3].code  = soffset;
+    m_instruction.src[3].code = soffset;
 
     m_instruction.control.mubuf = *reinterpret_cast<InstControlMUBUF*>(&hexInstruction);
 
     if (op >= static_cast<u32>(OpcodeMUBUF::BUFFER_LOAD_FORMAT_X) &&
-        op <= static_cast<u32>(OpcodeMUBUF::BUFFER_LOAD_FORMAT_XYZW))
-    {
+        op <= static_cast<u32>(OpcodeMUBUF::BUFFER_LOAD_FORMAT_XYZW)) {
         m_instruction.control.mubuf.count = op + 1;
-        m_instruction.control.mubuf.size  = (op + 1) * sizeof(u32);
-    }
-    else if (op >= static_cast<u32>(OpcodeMUBUF::BUFFER_STORE_FORMAT_X) &&
-             op <= static_cast<u32>(OpcodeMUBUF::BUFFER_STORE_FORMAT_XYZW))
-    {
+        m_instruction.control.mubuf.size = (op + 1) * sizeof(u32);
+    } else if (op >= static_cast<u32>(OpcodeMUBUF::BUFFER_STORE_FORMAT_X) &&
+               op <= static_cast<u32>(OpcodeMUBUF::BUFFER_STORE_FORMAT_XYZW)) {
         m_instruction.control.mubuf.count = op - 3;
-        m_instruction.control.mubuf.size  = (op - 3) * sizeof(u32);
-    }
-    else if (op >= static_cast<u32>(OpcodeMUBUF::BUFFER_LOAD_DWORD) &&
-             op <= static_cast<u32>(OpcodeMUBUF::BUFFER_LOAD_DWORDX3))
-    {
+        m_instruction.control.mubuf.size = (op - 3) * sizeof(u32);
+    } else if (op >= static_cast<u32>(OpcodeMUBUF::BUFFER_LOAD_DWORD) &&
+               op <= static_cast<u32>(OpcodeMUBUF::BUFFER_LOAD_DWORDX3)) {
         m_instruction.control.mubuf.count =
             op == static_cast<u32>(OpcodeMUBUF::BUFFER_LOAD_DWORDX3) ? 3 : 1 << (op - 12);
         m_instruction.control.mubuf.size = m_instruction.control.mubuf.count * sizeof(u32);
-    }
-    else if (op >= static_cast<u32>(OpcodeMUBUF::BUFFER_STORE_DWORD) &&
-             op <= static_cast<u32>(OpcodeMUBUF::BUFFER_STORE_DWORDX3))
-    {
+    } else if (op >= static_cast<u32>(OpcodeMUBUF::BUFFER_STORE_DWORD) &&
+               op <= static_cast<u32>(OpcodeMUBUF::BUFFER_STORE_DWORDX3)) {
         m_instruction.control.mubuf.count =
             op == static_cast<u32>(OpcodeMUBUF::BUFFER_STORE_DWORDX3) ? 3 : 1 << (op - 28);
         m_instruction.control.mubuf.size = m_instruction.control.mubuf.count * sizeof(u32);
-    }
-    else if (op >= static_cast<u32>(OpcodeMUBUF::BUFFER_LOAD_UBYTE) &&
-             op <= static_cast<u32>(OpcodeMUBUF::BUFFER_LOAD_SSHORT))
-    {
+    } else if (op >= static_cast<u32>(OpcodeMUBUF::BUFFER_LOAD_UBYTE) &&
+               op <= static_cast<u32>(OpcodeMUBUF::BUFFER_LOAD_SSHORT)) {
         m_instruction.control.mubuf.count = 1;
         if (op >= static_cast<u32>(OpcodeMUBUF::BUFFER_LOAD_UBYTE) &&
-            op <= static_cast<u32>(OpcodeMUBUF::BUFFER_LOAD_SBYTE))
-        {
+            op <= static_cast<u32>(OpcodeMUBUF::BUFFER_LOAD_SBYTE)) {
             m_instruction.control.mubuf.size = 1;
-        }
-        else
-        {
+        } else {
             m_instruction.control.mubuf.size = 2;
         }
-    }
-    else if (op >= static_cast<u32>(OpcodeMUBUF::BUFFER_STORE_BYTE) &&
-             op <= static_cast<u32>(OpcodeMUBUF::BUFFER_STORE_SHORT))
-    {
+    } else if (op >= static_cast<u32>(OpcodeMUBUF::BUFFER_STORE_BYTE) &&
+               op <= static_cast<u32>(OpcodeMUBUF::BUFFER_STORE_SHORT)) {
         m_instruction.control.mubuf.count = 1;
-        if (op == static_cast<u32>(OpcodeMUBUF::BUFFER_STORE_BYTE))
-        {
+        if (op == static_cast<u32>(OpcodeMUBUF::BUFFER_STORE_BYTE)) {
             m_instruction.control.mubuf.size = 1;
-        }
-        else
-        {
+        } else {
             m_instruction.control.mubuf.size = 2;
         }
-    }
-    else if (op >= static_cast<u32>(OpcodeMUBUF::BUFFER_ATOMIC_SWAP) &&
-             op <= static_cast<u32>(OpcodeMUBUF::BUFFER_ATOMIC_FMAX))
-    {
+    } else if (op >= static_cast<u32>(OpcodeMUBUF::BUFFER_ATOMIC_SWAP) &&
+               op <= static_cast<u32>(OpcodeMUBUF::BUFFER_ATOMIC_FMAX)) {
         m_instruction.control.mubuf.count = 1;
-        m_instruction.control.mubuf.size  = sizeof(u32);
-    }
-    else if (op >= static_cast<u32>(OpcodeMUBUF::BUFFER_ATOMIC_SWAP_X2) &&
-             op <= static_cast<u32>(OpcodeMUBUF::BUFFER_ATOMIC_FMAX_X2))
-    {
+        m_instruction.control.mubuf.size = sizeof(u32);
+    } else if (op >= static_cast<u32>(OpcodeMUBUF::BUFFER_ATOMIC_SWAP_X2) &&
+               op <= static_cast<u32>(OpcodeMUBUF::BUFFER_ATOMIC_FMAX_X2)) {
         m_instruction.control.mubuf.count = 2;
-        m_instruction.control.mubuf.size  = sizeof(u32) * 2;
+        m_instruction.control.mubuf.size = sizeof(u32) * 2;
     }
 }
 
-void GcnDecodeContext::decodeInstructionMTBUF(uint64_t hexInstruction)
-{
-    u32 op      = bit::extract(hexInstruction, 18, 16);
-    u32 vaddr   = bit::extract(hexInstruction, 39, 32);
-    u32 vdata   = bit::extract(hexInstruction, 47, 40);
-    u32 srsrc   = bit::extract(hexInstruction, 52, 48);
+void GcnDecodeContext::decodeInstructionMTBUF(uint64_t hexInstruction) {
+    u32 op = bit::extract(hexInstruction, 18, 16);
+    u32 vaddr = bit::extract(hexInstruction, 39, 32);
+    u32 vdata = bit::extract(hexInstruction, 47, 40);
+    u32 srsrc = bit::extract(hexInstruction, 52, 48);
     u32 soffset = bit::extract(hexInstruction, 63, 56);
 
     m_instruction.opcode = static_cast<Opcode>(op + static_cast<u32>(OpcodeMap::OP_MAP_MTBUF));
 
     m_instruction.src[0].field = OperandField::VectorGPR;
-    m_instruction.src[0].code  = vaddr;
+    m_instruction.src[0].code = vaddr;
     m_instruction.src[1].field = OperandField::VectorGPR;
-    m_instruction.src[1].code  = vdata;
+    m_instruction.src[1].code = vdata;
     m_instruction.src[2].field = OperandField::ScalarGPR;
-    m_instruction.src[2].code  = srsrc;
+    m_instruction.src[2].code = srsrc;
     m_instruction.src[3].field = getOperandField(soffset);
-    m_instruction.src[3].code  = soffset;
+    m_instruction.src[3].code = soffset;
 
     m_instruction.control.mtbuf = *reinterpret_cast<InstControlMTBUF*>(&hexInstruction);
 
     if (op >= static_cast<u32>(OpcodeMTBUF::TBUFFER_LOAD_FORMAT_X) &&
-        op <= static_cast<u32>(OpcodeMTBUF::TBUFFER_LOAD_FORMAT_XYZW))
-    {
+        op <= static_cast<u32>(OpcodeMTBUF::TBUFFER_LOAD_FORMAT_XYZW)) {
         m_instruction.control.mtbuf.count = op + 1;
-    }
-    else if (op >= static_cast<u32>(OpcodeMTBUF::TBUFFER_STORE_FORMAT_X) &&
-             op <= static_cast<u32>(OpcodeMTBUF::TBUFFER_STORE_FORMAT_XYZW))
-    {
+    } else if (op >= static_cast<u32>(OpcodeMTBUF::TBUFFER_STORE_FORMAT_X) &&
+               op <= static_cast<u32>(OpcodeMTBUF::TBUFFER_STORE_FORMAT_XYZW)) {
         m_instruction.control.mtbuf.count = op - 3;
     }
 }
 
-u32 GcnDecodeContext::getMimgModifier(Opcode opcode)
-{
+u32 GcnDecodeContext::getMimgModifier(Opcode opcode) {
     MimgModifierFlags flags = {};
 
-    switch (opcode)
-    {
+    switch (opcode) {
     case Opcode::IMAGE_SAMPLE:
         break;
     case Opcode::IMAGE_SAMPLE_CL:
@@ -881,8 +806,7 @@ u32 GcnDecodeContext::getMimgModifier(Opcode opcode)
         flags.set(MimgModifier::Derivative);
         break;
     case Opcode::IMAGE_SAMPLE_D_CL:
-        flags.set(MimgModifier::Derivative,
-                  MimgModifier::LodClamp);
+        flags.set(MimgModifier::Derivative, MimgModifier::LodClamp);
         break;
     case Opcode::IMAGE_SAMPLE_L:
         flags.set(MimgModifier::Lod);
@@ -891,8 +815,7 @@ u32 GcnDecodeContext::getMimgModifier(Opcode opcode)
         flags.set(MimgModifier::LodBias);
         break;
     case Opcode::IMAGE_SAMPLE_B_CL:
-        flags.set(MimgModifier::LodBias,
-                  MimgModifier::LodClamp);
+        flags.set(MimgModifier::LodBias, MimgModifier::LodClamp);
         break;
     case Opcode::IMAGE_SAMPLE_LZ:
         flags.set(MimgModifier::Level0);
@@ -901,108 +824,75 @@ u32 GcnDecodeContext::getMimgModifier(Opcode opcode)
         flags.set(MimgModifier::Pcf);
         break;
     case Opcode::IMAGE_SAMPLE_C_CL:
-        flags.set(MimgModifier::Pcf,
-                  MimgModifier::LodClamp);
+        flags.set(MimgModifier::Pcf, MimgModifier::LodClamp);
         break;
     case Opcode::IMAGE_SAMPLE_C_D:
-        flags.set(MimgModifier::Pcf,
-                  MimgModifier::Derivative);
+        flags.set(MimgModifier::Pcf, MimgModifier::Derivative);
         break;
     case Opcode::IMAGE_SAMPLE_C_D_CL:
-        flags.set(MimgModifier::Pcf,
-                  MimgModifier::Derivative,
-                  MimgModifier::LodClamp);
+        flags.set(MimgModifier::Pcf, MimgModifier::Derivative, MimgModifier::LodClamp);
         break;
     case Opcode::IMAGE_SAMPLE_C_L:
-        flags.set(MimgModifier::Pcf,
-                  MimgModifier::Lod);
+        flags.set(MimgModifier::Pcf, MimgModifier::Lod);
         break;
     case Opcode::IMAGE_SAMPLE_C_B:
-        flags.set(MimgModifier::Pcf,
-                  MimgModifier::LodBias);
+        flags.set(MimgModifier::Pcf, MimgModifier::LodBias);
         break;
     case Opcode::IMAGE_SAMPLE_C_B_CL:
-        flags.set(MimgModifier::Pcf,
-                  MimgModifier::LodBias,
-                  MimgModifier::LodClamp);
+        flags.set(MimgModifier::Pcf, MimgModifier::LodBias, MimgModifier::LodClamp);
         break;
     case Opcode::IMAGE_SAMPLE_C_LZ:
-        flags.set(MimgModifier::Pcf,
-                  MimgModifier::Level0);
+        flags.set(MimgModifier::Pcf, MimgModifier::Level0);
         break;
     case Opcode::IMAGE_SAMPLE_O:
         flags.set(MimgModifier::Offset);
         break;
     case Opcode::IMAGE_SAMPLE_CL_O:
-        flags.set(MimgModifier::LodClamp,
-                  MimgModifier::Offset);
+        flags.set(MimgModifier::LodClamp, MimgModifier::Offset);
         break;
     case Opcode::IMAGE_SAMPLE_D_O:
-        flags.set(MimgModifier::Derivative,
-                  MimgModifier::Offset);
+        flags.set(MimgModifier::Derivative, MimgModifier::Offset);
         break;
     case Opcode::IMAGE_SAMPLE_D_CL_O:
-        flags.set(MimgModifier::Derivative,
-                  MimgModifier::LodClamp,
-                  MimgModifier::Offset);
+        flags.set(MimgModifier::Derivative, MimgModifier::LodClamp, MimgModifier::Offset);
         break;
     case Opcode::IMAGE_SAMPLE_L_O:
-        flags.set(MimgModifier::Lod,
-                  MimgModifier::Offset);
+        flags.set(MimgModifier::Lod, MimgModifier::Offset);
         break;
     case Opcode::IMAGE_SAMPLE_B_O:
-        flags.set(MimgModifier::LodBias,
-                  MimgModifier::Offset);
+        flags.set(MimgModifier::LodBias, MimgModifier::Offset);
         break;
     case Opcode::IMAGE_SAMPLE_B_CL_O:
-        flags.set(MimgModifier::LodBias,
-                  MimgModifier::LodClamp,
-                  MimgModifier::Offset);
+        flags.set(MimgModifier::LodBias, MimgModifier::LodClamp, MimgModifier::Offset);
         break;
     case Opcode::IMAGE_SAMPLE_LZ_O:
-        flags.set(MimgModifier::Level0,
-                  MimgModifier::Offset);
+        flags.set(MimgModifier::Level0, MimgModifier::Offset);
         break;
     case Opcode::IMAGE_SAMPLE_C_O:
-        flags.set(MimgModifier::Pcf,
-                  MimgModifier::Offset);
+        flags.set(MimgModifier::Pcf, MimgModifier::Offset);
         break;
     case Opcode::IMAGE_SAMPLE_C_CL_O:
-        flags.set(MimgModifier::Pcf,
-                  MimgModifier::LodClamp,
-                  MimgModifier::Offset);
+        flags.set(MimgModifier::Pcf, MimgModifier::LodClamp, MimgModifier::Offset);
         break;
     case Opcode::IMAGE_SAMPLE_C_D_O:
-        flags.set(MimgModifier::Pcf,
-                  MimgModifier::Derivative,
-                  MimgModifier::Offset);
+        flags.set(MimgModifier::Pcf, MimgModifier::Derivative, MimgModifier::Offset);
         break;
     case Opcode::IMAGE_SAMPLE_C_D_CL_O:
-        flags.set(MimgModifier::Pcf,
-                  MimgModifier::Derivative,
-                  MimgModifier::LodClamp,
+        flags.set(MimgModifier::Pcf, MimgModifier::Derivative, MimgModifier::LodClamp,
                   MimgModifier::Offset);
         break;
     case Opcode::IMAGE_SAMPLE_C_L_O:
-        flags.set(MimgModifier::Pcf,
-                  MimgModifier::Lod,
-                  MimgModifier::Offset);
+        flags.set(MimgModifier::Pcf, MimgModifier::Lod, MimgModifier::Offset);
         break;
     case Opcode::IMAGE_SAMPLE_C_B_O:
-        flags.set(MimgModifier::Pcf,
-                  MimgModifier::LodBias,
-                  MimgModifier::Offset);
+        flags.set(MimgModifier::Pcf, MimgModifier::LodBias, MimgModifier::Offset);
         break;
     case Opcode::IMAGE_SAMPLE_C_B_CL_O:
-        flags.set(MimgModifier::Pcf,
-                  MimgModifier::LodBias,
-                  MimgModifier::LodClamp,
+        flags.set(MimgModifier::Pcf, MimgModifier::LodBias, MimgModifier::LodClamp,
                   MimgModifier::Offset);
         break;
     case Opcode::IMAGE_SAMPLE_C_LZ_O:
-        flags.set(MimgModifier::Pcf,
-                  MimgModifier::Level0,
-                  MimgModifier::Offset);
+        flags.set(MimgModifier::Pcf, MimgModifier::Level0, MimgModifier::Offset);
         break;
     case Opcode::IMAGE_GATHER4:
         break;
@@ -1016,8 +906,7 @@ u32 GcnDecodeContext::getMimgModifier(Opcode opcode)
         flags.set(MimgModifier::LodBias);
         break;
     case Opcode::IMAGE_GATHER4_B_CL:
-        flags.set(MimgModifier::LodBias,
-                  MimgModifier::LodClamp);
+        flags.set(MimgModifier::LodBias, MimgModifier::LodClamp);
         break;
     case Opcode::IMAGE_GATHER4_LZ:
         flags.set(MimgModifier::Level0);
@@ -1026,114 +915,80 @@ u32 GcnDecodeContext::getMimgModifier(Opcode opcode)
         flags.set(MimgModifier::Pcf);
         break;
     case Opcode::IMAGE_GATHER4_C_CL:
-        flags.set(MimgModifier::Pcf,
-                  MimgModifier::LodClamp);
+        flags.set(MimgModifier::Pcf, MimgModifier::LodClamp);
         break;
     case Opcode::IMAGE_GATHER4_C_L:
-        flags.set(MimgModifier::Pcf,
-                  MimgModifier::Lod);
+        flags.set(MimgModifier::Pcf, MimgModifier::Lod);
         break;
     case Opcode::IMAGE_GATHER4_C_B:
-        flags.set(MimgModifier::Pcf,
-                  MimgModifier::LodBias);
+        flags.set(MimgModifier::Pcf, MimgModifier::LodBias);
         break;
     case Opcode::IMAGE_GATHER4_C_B_CL:
-        flags.set(MimgModifier::Pcf,
-                  MimgModifier::LodBias,
-                  MimgModifier::LodClamp);
+        flags.set(MimgModifier::Pcf, MimgModifier::LodBias, MimgModifier::LodClamp);
         break;
     case Opcode::IMAGE_GATHER4_C_LZ:
-        flags.set(MimgModifier::Pcf,
-                  MimgModifier::Level0);
+        flags.set(MimgModifier::Pcf, MimgModifier::Level0);
         break;
     case Opcode::IMAGE_GATHER4_O:
         flags.set(MimgModifier::Offset);
         break;
     case Opcode::IMAGE_GATHER4_CL_O:
-        flags.set(MimgModifier::LodClamp,
-                  MimgModifier::Offset);
+        flags.set(MimgModifier::LodClamp, MimgModifier::Offset);
         break;
     case Opcode::IMAGE_GATHER4_L_O:
-        flags.set(MimgModifier::Lod,
-                  MimgModifier::Offset);
+        flags.set(MimgModifier::Lod, MimgModifier::Offset);
         break;
     case Opcode::IMAGE_GATHER4_B_O:
-        flags.set(MimgModifier::LodBias,
-                  MimgModifier::Offset);
+        flags.set(MimgModifier::LodBias, MimgModifier::Offset);
         break;
     case Opcode::IMAGE_GATHER4_B_CL_O:
-        flags.set(MimgModifier::LodBias,
-                  MimgModifier::LodClamp,
-                  MimgModifier::Offset);
+        flags.set(MimgModifier::LodBias, MimgModifier::LodClamp, MimgModifier::Offset);
         break;
     case Opcode::IMAGE_GATHER4_LZ_O:
-        flags.set(MimgModifier::Level0,
-                  MimgModifier::Offset);
+        flags.set(MimgModifier::Level0, MimgModifier::Offset);
         break;
     case Opcode::IMAGE_GATHER4_C_O:
-        flags.set(MimgModifier::Pcf,
-                  MimgModifier::Offset);
+        flags.set(MimgModifier::Pcf, MimgModifier::Offset);
         break;
     case Opcode::IMAGE_GATHER4_C_CL_O:
-        flags.set(MimgModifier::Pcf,
-                  MimgModifier::LodClamp,
-                  MimgModifier::Offset);
+        flags.set(MimgModifier::Pcf, MimgModifier::LodClamp, MimgModifier::Offset);
         break;
     case Opcode::IMAGE_GATHER4_C_L_O:
-        flags.set(MimgModifier::Pcf,
-                  MimgModifier::Lod,
-                  MimgModifier::Offset);
+        flags.set(MimgModifier::Pcf, MimgModifier::Lod, MimgModifier::Offset);
         break;
     case Opcode::IMAGE_GATHER4_C_B_O:
-        flags.set(MimgModifier::Pcf,
-                  MimgModifier::LodBias,
-                  MimgModifier::Offset);
+        flags.set(MimgModifier::Pcf, MimgModifier::LodBias, MimgModifier::Offset);
         break;
     case Opcode::IMAGE_GATHER4_C_B_CL_O:
-        flags.set(MimgModifier::Pcf,
-                  MimgModifier::LodBias,
-                  MimgModifier::LodClamp,
+        flags.set(MimgModifier::Pcf, MimgModifier::LodBias, MimgModifier::LodClamp,
                   MimgModifier::Offset);
         break;
     case Opcode::IMAGE_GATHER4_C_LZ_O:
-        flags.set(MimgModifier::Pcf,
-                  MimgModifier::Level0,
-                  MimgModifier::Offset);
+        flags.set(MimgModifier::Pcf, MimgModifier::Level0, MimgModifier::Offset);
         break;
     case Opcode::IMAGE_SAMPLE_CD:
         flags.set(MimgModifier::CoarseDerivative);
         break;
     case Opcode::IMAGE_SAMPLE_CD_CL:
-        flags.set(MimgModifier::CoarseDerivative,
-                  MimgModifier::LodClamp);
+        flags.set(MimgModifier::CoarseDerivative, MimgModifier::LodClamp);
         break;
     case Opcode::IMAGE_SAMPLE_C_CD:
-        flags.set(MimgModifier::Pcf,
-                  MimgModifier::CoarseDerivative);
+        flags.set(MimgModifier::Pcf, MimgModifier::CoarseDerivative);
         break;
     case Opcode::IMAGE_SAMPLE_C_CD_CL:
-        flags.set(MimgModifier::Pcf,
-                  MimgModifier::CoarseDerivative,
-                  MimgModifier::LodClamp);
+        flags.set(MimgModifier::Pcf, MimgModifier::CoarseDerivative, MimgModifier::LodClamp);
         break;
     case Opcode::IMAGE_SAMPLE_CD_O:
-        flags.set(MimgModifier::CoarseDerivative,
-                  MimgModifier::Offset);
+        flags.set(MimgModifier::CoarseDerivative, MimgModifier::Offset);
         break;
     case Opcode::IMAGE_SAMPLE_CD_CL_O:
-        flags.set(MimgModifier::CoarseDerivative,
-                  MimgModifier::LodClamp,
-                  MimgModifier::Offset);
+        flags.set(MimgModifier::CoarseDerivative, MimgModifier::LodClamp, MimgModifier::Offset);
         break;
     case Opcode::IMAGE_SAMPLE_C_CD_O:
-        flags.set(MimgModifier::Pcf,
-                  MimgModifier::CoarseDerivative,
-                  MimgModifier::Offset);
+        flags.set(MimgModifier::Pcf, MimgModifier::CoarseDerivative, MimgModifier::Offset);
         break;
     case Opcode::IMAGE_SAMPLE_C_CD_CL_O:
-        flags.set(MimgModifier::Pcf,
-                  MimgModifier::CoarseDerivative,
-                  MimgModifier::LodClamp,
+        flags.set(MimgModifier::Pcf, MimgModifier::CoarseDerivative, MimgModifier::LodClamp,
                   MimgModifier::Offset);
         break;
     }
@@ -1141,9 +996,8 @@ u32 GcnDecodeContext::getMimgModifier(Opcode opcode)
     return flags.raw();
 }
 
-void GcnDecodeContext::decodeInstructionMIMG(uint64_t hexInstruction)
-{
-    u32 op    = bit::extract(hexInstruction, 24, 18);
+void GcnDecodeContext::decodeInstructionMIMG(uint64_t hexInstruction) {
+    u32 op = bit::extract(hexInstruction, 24, 18);
     u32 vaddr = bit::extract(hexInstruction, 39, 32);
     u32 vdata = bit::extract(hexInstruction, 47, 40);
     u32 srsrc = bit::extract(hexInstruction, 52, 48);
@@ -1152,90 +1006,75 @@ void GcnDecodeContext::decodeInstructionMIMG(uint64_t hexInstruction)
     m_instruction.opcode = static_cast<Opcode>(op + static_cast<u32>(OpcodeMap::OP_MAP_MIMG));
 
     m_instruction.src[0].field = OperandField::VectorGPR;
-    m_instruction.src[0].code  = vaddr;
+    m_instruction.src[0].code = vaddr;
     m_instruction.src[2].field = OperandField::ScalarGPR;
-    m_instruction.src[2].code  = srsrc;
+    m_instruction.src[2].code = srsrc;
     m_instruction.src[3].field = OperandField::ScalarGPR;
-    m_instruction.src[3].code  = ssamp;
+    m_instruction.src[3].code = ssamp;
     m_instruction.dst[0].field = OperandField::VectorGPR;
-    m_instruction.dst[0].code  = vdata;
+    m_instruction.dst[0].code = vdata;
 
-    m_instruction.control.mimg     = *reinterpret_cast<InstControlMIMG*>(&hexInstruction);
+    m_instruction.control.mimg = *reinterpret_cast<InstControlMIMG*>(&hexInstruction);
     m_instruction.control.mimg.mod = getMimgModifier(m_instruction.opcode);
 }
 
-void GcnDecodeContext::decodeInstructionDS(uint64_t hexInstruction)
-{
+void GcnDecodeContext::decodeInstructionDS(uint64_t hexInstruction) {
     OpcodeDS op = (OpcodeDS)bit::extract(hexInstruction, 25, 18);
-    u32 addr  = bit::extract(hexInstruction, 39, 32);
+    u32 addr = bit::extract(hexInstruction, 39, 32);
     u32 data0 = bit::extract(hexInstruction, 47, 40);
     u32 data1 = bit::extract(hexInstruction, 55, 48);
-    u32 vdst  = bit::extract(hexInstruction, 63, 56);
+    u32 vdst = bit::extract(hexInstruction, 63, 56);
 
     m_instruction.opcode = static_cast<Opcode>(u32(op) + static_cast<u32>(OpcodeMap::OP_MAP_DS));
 
     m_instruction.src[0].field = OperandField::VectorGPR;
-    m_instruction.src[0].code  = addr;
+    m_instruction.src[0].code = addr;
     m_instruction.src[1].field = OperandField::VectorGPR;
-    m_instruction.src[1].code  = data0;
+    m_instruction.src[1].code = data0;
     m_instruction.src[2].field = OperandField::VectorGPR;
-    m_instruction.src[2].code  = data1;
+    m_instruction.src[2].code = data1;
     m_instruction.dst[0].field = OperandField::VectorGPR;
-    m_instruction.dst[0].code  = vdst;
+    m_instruction.dst[0].code = vdst;
     m_instruction.dst_count = 1;
 
     m_instruction.control.ds = *reinterpret_cast<InstControlDS*>(&hexInstruction);
 
     auto instFormat = InstructionFormat(InstEncoding::DS, (u32)op);
 
-    m_instruction.control.ds.dual = op == OpcodeDS::DS_WRITE2_B32 ||
-                                    op == OpcodeDS::DS_WRXCHG2_RTN_B32 ||
-                                    op == OpcodeDS::DS_READ2_B32 ||
-                                    op == OpcodeDS::DS_WRITE2_B64 ||
-                                    op == OpcodeDS::DS_WRXCHG2_RTN_B64 ||
-                                    op == OpcodeDS::DS_READ2_B64;
+    m_instruction.control.ds.dual =
+        op == OpcodeDS::DS_WRITE2_B32 || op == OpcodeDS::DS_WRXCHG2_RTN_B32 ||
+        op == OpcodeDS::DS_READ2_B32 || op == OpcodeDS::DS_WRITE2_B64 ||
+        op == OpcodeDS::DS_WRXCHG2_RTN_B64 || op == OpcodeDS::DS_READ2_B64;
 
     m_instruction.control.ds.sign = instFormat.src_type == ScalarType::Sint32;
 
-    m_instruction.control.ds.relative = op >= OpcodeDS::DS_ADD_SRC2_U32 &&
-                                        op <= OpcodeDS::DS_MAX_SRC2_F64;
+    m_instruction.control.ds.relative =
+        op >= OpcodeDS::DS_ADD_SRC2_U32 && op <= OpcodeDS::DS_MAX_SRC2_F64;
 
-    m_instruction.control.ds.stride = op == OpcodeDS::DS_WRITE2ST64_B32 ||
-                                      op == OpcodeDS::DS_WRXCHG2ST64_RTN_B32 ||
-                                      op == OpcodeDS::DS_READ2ST64_B32 ||
-                                      op == OpcodeDS::DS_WRITE2ST64_B64 ||
-                                      op == OpcodeDS::DS_WRXCHG2ST64_RTN_B64 ||
-                                      op == OpcodeDS::DS_READ2ST64_B64;
+    m_instruction.control.ds.stride =
+        op == OpcodeDS::DS_WRITE2ST64_B32 || op == OpcodeDS::DS_WRXCHG2ST64_RTN_B32 ||
+        op == OpcodeDS::DS_READ2ST64_B32 || op == OpcodeDS::DS_WRITE2ST64_B64 ||
+        op == OpcodeDS::DS_WRXCHG2ST64_RTN_B64 || op == OpcodeDS::DS_READ2ST64_B64;
 
-    if (op == OpcodeDS::DS_WRITE_B8 || op == OpcodeDS::DS_READ_I8 ||
-        op == OpcodeDS::DS_READ_U8) {
+    if (op == OpcodeDS::DS_WRITE_B8 || op == OpcodeDS::DS_READ_I8 || op == OpcodeDS::DS_READ_U8) {
         m_instruction.control.ds.size = 1;
-    }
-    else if (op == OpcodeDS::DS_WRITE_B16 ||
-             op == OpcodeDS::DS_READ_I16 ||
-             op == OpcodeDS::DS_READ_U16)
-    {
+    } else if (op == OpcodeDS::DS_WRITE_B16 || op == OpcodeDS::DS_READ_I16 ||
+               op == OpcodeDS::DS_READ_U16) {
         m_instruction.control.ds.size = 2;
-    }
-    else
-    {
-        if (instFormat.src_type == ScalarType::Sint32 || instFormat.src_type == ScalarType::Uint32)
-        {
+    } else {
+        if (instFormat.src_type == ScalarType::Sint32 ||
+            instFormat.src_type == ScalarType::Uint32) {
             m_instruction.control.ds.size = 4;
-        }
-        else if (instFormat.src_type == ScalarType::Sint64 || instFormat.src_type == ScalarType::Uint64)
-        {
+        } else if (instFormat.src_type == ScalarType::Sint64 ||
+                   instFormat.src_type == ScalarType::Uint64) {
             m_instruction.control.ds.size = 8;
-        }
-        else
-        {
+        } else {
             m_instruction.control.ds.size = 0;
         }
     }
 }
 
-void GcnDecodeContext::decodeInstructionEXP(uint64_t hexInstruction)
-{
+void GcnDecodeContext::decodeInstructionEXP(uint64_t hexInstruction) {
     u32 vsrc0 = bit::extract(hexInstruction, 39, 32);
     u32 vsrc1 = bit::extract(hexInstruction, 47, 40);
     u32 vsrc2 = bit::extract(hexInstruction, 55, 48);
@@ -1244,13 +1083,13 @@ void GcnDecodeContext::decodeInstructionEXP(uint64_t hexInstruction)
     m_instruction.opcode = Opcode::EXP;
 
     m_instruction.src[0].field = OperandField::VectorGPR;
-    m_instruction.src[0].code  = vsrc0;
+    m_instruction.src[0].code = vsrc0;
     m_instruction.src[1].field = OperandField::VectorGPR;
-    m_instruction.src[1].code  = vsrc1;
+    m_instruction.src[1].code = vsrc1;
     m_instruction.src[2].field = OperandField::VectorGPR;
-    m_instruction.src[2].code  = vsrc2;
+    m_instruction.src[2].code = vsrc2;
     m_instruction.src[3].field = OperandField::VectorGPR;
-    m_instruction.src[3].code  = vsrc3;
+    m_instruction.src[3].code = vsrc3;
 
     m_instruction.control.exp = *reinterpret_cast<InstControlEXP*>(&hexInstruction);
 }
