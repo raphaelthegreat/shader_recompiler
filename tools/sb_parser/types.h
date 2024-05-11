@@ -601,8 +601,12 @@ static inline const GnmShaderBinaryInfo* psslSbGnmShaderBinaryInfo(const PsslBin
 	if (!hdr) {
 		return NULL;
 	}
+
+	const GnmShaderFileHeader* sfhdr = psslSbGnmShader(hdr);
+	const GnmShaderCommonData* common = gnmShfCommonData(sfhdr);
+
 	const uint8_t* ptr = (const uint8_t*)hdr + sizeof(PsslBinaryHeader) +
-			     hdr->codesize - sizeof(GnmShaderBinaryInfo);
+			     hdr->codesize - sizeof(GnmShaderBinaryInfo) - common->embeddedconstantbufferdqwords * 16;
 	return (const GnmShaderBinaryInfo*)ptr;
 }
 
