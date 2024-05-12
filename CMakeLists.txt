@@ -20,6 +20,8 @@ add_subdirectory(externals)
 add_library(shader_recompiler STATIC
             src/exception.h
             src/object_pool.h
+            src/recompiler.h
+            src/recompiler.cpp
             src/common/assert.cpp
             src/common/assert.h
             src/common/bit_field.h

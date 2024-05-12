@@ -8,13 +8,7 @@
 #include <getopt.h>
 
 #include "common/assert.h"
-#include "frontend/control_flow_graph.h"
-#include "frontend/decode.h"
-#include "frontend/structured_control_flow.h"
-#include "ir/abstract_syntax_list.h"
-#include "ir/basic_block.h"
-#include "ir/post_order.h"
-#include "object_pool.h"
+#include "recompiler.h"
 
 #include "shaderbinary.h"
 #include "strings.h"
@@ -22,11 +16,6 @@
 #include "validate.h"
 
 namespace fs = std::filesystem;
-
-namespace Shader::Optimization {
-void SsaRewritePass(IR::BlockList& program);
-void IdentityRemovalPass(IR::BlockList& program);
-} // namespace Shader::Optimization
 
 struct ShaderBinaryInfo {
     uint8_t m_signature[7]; // 'OrbShdr'
@@ -62,23 +51,6 @@ struct ShaderBinaryInfo {
     uint32_t m_crc32;       // crc32 of shader + this struct, just up till this field
 };
 
-Shader::IR::BlockList GenerateBlocks(const Shader::IR::AbstractSyntaxList& syntax_list) {
-    size_t num_syntax_blocks{};
-    for (const auto& node : syntax_list) {
-        if (node.type == Shader::IR::AbstractSyntaxNode::Type::Block) {
-            ++num_syntax_blocks;
-        }
-    }
-    Shader::IR::BlockList blocks;
-    blocks.reserve(num_syntax_blocks);
-    for (const auto& node : syntax_list) {
-        if (node.type == Shader::IR::AbstractSyntaxNode::Type::Block) {
-            blocks.push_back(node.data.block);
-        }
-    }
-    return blocks;
-}
-
 static void parseshadercode(const u8* code, uint32_t codesize) {
     std::ofstream out("shader.bin", std::ios::binary);
     out.write((const char*)code, codesize);
@@ -94,29 +66,8 @@ static void parseshadercode(const u8* code, uint32_t codesize) {
 
     const u32* start = reinterpret_cast<const u32*>(code);
     const u32* end = reinterpret_cast<const u32*>(code + codesize);
-    Shader::Gcn::GcnCodeSlice slice(start, end);
-    std::vector<Shader::Gcn::GcnInst> insList;
-    Shader::Gcn::GcnDecodeContext decoder;
 
-    // Decode and save instructions
-    insList.reserve(bininfo->m_length / sizeof(u32));
-    while (!slice.atEnd()) {
-        insList.emplace_back(decoder.decodeInstruction(slice));
-    }
-
-    Shader::ObjectPool<Shader::Gcn::Block> block_pool{64};
-    Shader::ObjectPool<Shader::IR::Block> blk_pool{64};
-    Shader::ObjectPool<Shader::IR::Inst> inst_pool{64};
-    Shader::Gcn::CFG cfg{block_pool, insList};
-    fmt::print("{}\n\n\n", cfg.Dot());
-    const auto ret = Shader::Gcn::BuildASL(inst_pool, blk_pool, cfg);
-    auto blocks = Shader::IR::PostOrder(ret.front());
-    auto block = GenerateBlocks(ret);
-    Shader::Optimization::SsaRewritePass(blocks);
-    Shader::Optimization::IdentityRemovalPass(block);
-    for (auto& blk : block) {
-        fmt::print("{}\n\n", Shader::IR::DumpBlock(*blk));
-    }
+    Shader::Recompiler::recompile_shader(std::span{start, end});
 
     while (0) {
         // ctx.decodeInstruction(slice);
